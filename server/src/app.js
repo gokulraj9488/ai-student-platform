@@ -6,6 +6,15 @@ const errorHandler = require('./middleware/errorHandler');
 dotenv.config({ path: '../.env' });
 
 const app = express();
+const rateLimit = require('express-rate-limit');
+const helmet = require('helmet');
+
+app.use(helmet());
+app.use(rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+  message: { error: 'Too many requests, please try again later' },
+}));
 
 const allowedOrigins = [
   'http://localhost:5173',

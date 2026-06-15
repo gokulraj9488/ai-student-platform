@@ -44,149 +44,122 @@ export default function Dashboard() {
     setSubjects(subjects.filter(s => s.id !== id));
   }
 
+  const COLORS = [
+    { bg: 'rgba(99,102,241,0.15)', border: 'rgba(99,102,241,0.3)', icon: '📐' },
+    { bg: 'rgba(139,92,246,0.15)', border: 'rgba(139,92,246,0.3)', icon: '⚛️' },
+    { bg: 'rgba(16,185,129,0.15)', border: 'rgba(16,185,129,0.3)', icon: '🧬' },
+    { bg: 'rgba(245,158,11,0.15)', border: 'rgba(245,158,11,0.3)', icon: '🔬' },
+    { bg: 'rgba(239,68,68,0.15)', border: 'rgba(239,68,68,0.3)', icon: '🧮' },
+  ];
+
   return (
-    <div className="flex h-screen bg-gray-950 text-white overflow-hidden relative">
+    <div className="min-h-screen bg-gray-950 text-white relative overflow-hidden">
       <MathBackground />
 
-      {/* Sidebar */}
-      <div className="relative flex flex-col w-72 border-r border-white/5 shrink-0" style={{
+      <div className="fixed inset-0 pointer-events-none" style={{
+        background: 'radial-gradient(ellipse at 50% 0%, rgba(15,23,42,0.6) 0%, rgba(3,7,18,0.85) 100%)',
+        zIndex: 1,
+      }} />
+
+      {/* Navbar */}
+      <nav className="relative border-b border-white/5 px-4 md:px-6 py-3 md:py-4 flex items-center justify-between" style={{
         zIndex: 10,
-        background: 'rgba(5, 10, 25, 0.85)',
+        background: 'rgba(3,7,18,0.7)',
         backdropFilter: 'blur(20px)',
       }}>
-
-        {/* Logo */}
-        <div className="px-5 py-5 border-b border-white/5">
+        <div className="flex items-center gap-2">
+          <img src="/Kurio.png" alt="Kurio" className="w-7 h-7 rounded-full object-cover" />
+          <span className="font-bold text-lg tracking-tight">Kuriosity</span>
+        </div>
+        <div className="flex items-center gap-2 md:gap-4">
+  <a
+    href="https://gokulraj9488.github.io/Gokulraj-portfolio/"
+    target="_blank"
+    rel="noopener noreferrer"
+    className="flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-medium transition"
+    style={{
+      background: 'rgba(99,102,241,0.15)',
+      border: '1px solid rgba(99,102,241,0.3)',
+      color: '#a5b4fc'
+    }}
+  >
+    Contact
+  </a>
           <div className="flex items-center gap-2">
-  <img src="/Kurio.png" alt="Kurio" className="w-7 h-7 rounded-full object-cover" />
-  <span className="font-bold text-lg tracking-tight">Kuriosity</span>
-</div>
-          <p className="text-xs text-gray-500 mt-0.5 ml-7">AI Learning Platform</p>
-        </div>
-
-        {/* Subjects list */}
-        <div className="flex-1 overflow-y-auto px-3 py-4">
-          <div className="flex items-center justify-between px-2 mb-3">
-            <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Subjects</span>
-            <button
-              onClick={() => setShowForm(true)}
-              className="w-5 h-5 rounded flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/10 transition text-lg leading-none"
-              title="New Subject"
-            >
-              +
-            </button>
+            <img src="/Teacher.png" alt="Teacher" className="w-7 h-7 rounded-full object-cover" />
+            <span className="text-sm text-gray-300 hidden md:block">{user?.name}</span>
           </div>
-
-          {loading ? (
-            <div className="text-center text-gray-600 text-xs py-8">Loading...</div>
-          ) : subjects.length === 0 ? (
-            <div className="text-center py-8">
-              <p className="text-gray-600 text-xs">No subjects yet</p>
-              <button
-                onClick={() => setShowForm(true)}
-                className="mt-2 text-blue-400 text-xs hover:underline"
-              >
-                Create your first subject
-              </button>
-            </div>
-          ) : (
-            <div className="space-y-1">
-              {subjects.map((s) => (
-                <div
-                  key={s.id}
-                  onClick={() => navigate(`/subject/${s.id}`)}
-                  className="group flex items-center justify-between px-3 py-2.5 rounded-xl cursor-pointer hover:bg-white/5 transition"
-                >
-                  <div className="flex items-center gap-2 min-w-0">
-                    <span className="text-base shrink-0">📁</span>
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium truncate">{s.name}</p>
-                      {s.description && (
-                        <p className="text-xs text-gray-500 truncate">{s.description}</p>
-                      )}
-                    </div>
-                  </div>
-                  <button
-                    onClick={(e) => deleteSubject(e, s.id)}
-                    className="opacity-0 group-hover:opacity-100 text-gray-600 hover:text-red-400 text-xs transition ml-2 shrink-0"
-                  >
-                    ✕
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
+          <button
+            onClick={() => { logout(); navigate('/login'); }}
+            className="text-xs text-gray-500 hover:text-white transition"
+          >Logout</button>
         </div>
+      </nav>
 
-        {/* Profile at bottom */}
-        <div className="border-t border-white/5 px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-xs font-bold">
-                {user?.name?.[0]?.toUpperCase()}
-              </div>
-              <div>
-                <p className="text-sm font-medium leading-none">{user?.name}</p>
-                <p className="text-xs text-gray-500 mt-0.5">Profile</p>
-              </div>
-            </div>
-            <button
-              onClick={() => { logout(); navigate('/login'); }}
-              className="text-xs text-gray-500 hover:text-white transition"
-            >
-              Logout
-            </button>
-          </div>
-        </div>
-      </div>
+      {/* Main */}
+      <div className="relative max-w-4xl mx-auto px-4 md:px-6 py-8 md:py-12" style={{ zIndex: 2 }}>
 
-      {/* Main area — welcome screen */}
-      <div className="flex-1 flex items-center justify-center relative" style={{ zIndex: 2 }}>
-        <div className="text-center max-w-md px-6">
-          <div className="text-6xl mb-6">🧑‍🎓</div>
-          <h1 className="text-3xl font-bold mb-3">
-            Your AI Student
+        {/* Header */}
+        <div className="mb-8 text-center">
+          <h1 className="text-2xl md:text-4xl font-bold mb-2 tracking-tight">
+            My{' '}
             <span style={{
               background: 'linear-gradient(135deg, #60a5fa, #a78bfa)',
               WebkitBackgroundClip: 'text',
               WebkitTextFillColor: 'transparent',
-            }}> is ready</span>
+            }}>Subjects</span>
           </h1>
-          <p className="text-gray-400 mb-8 leading-relaxed">
-            Select a subject from the sidebar or create a new one to start teaching your AI student.
-          </p>
+          <p className="text-gray-400 text-sm">Upload materials and teach Kurio</p>
+        </div>
+
+        {/* Stats */}
+        <div className="grid grid-cols-3 gap-3 mb-6">
+          {[
+            { label: 'Subjects', value: subjects.length, icon: '📚' },
+            { label: 'Kurio', value: 'Active', icon: '🧑‍🎓' },
+            { label: 'Memory', value: 'ON', icon: '🧠' },
+          ].map((stat) => (
+            <div key={stat.label} style={{
+              background: 'rgba(255,255,255,0.03)',
+              border: '1px solid rgba(255,255,255,0.06)',
+              borderRadius: 16,
+              padding: '12px 16px',
+              backdropFilter: 'blur(10px)',
+            }}>
+              <div className="text-xl md:text-2xl mb-1">{stat.icon}</div>
+              <div className="text-lg md:text-xl font-bold text-white">{stat.value}</div>
+              <div className="text-xs text-gray-500 mt-0.5">{stat.label}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* Action bar */}
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-sm md:text-base font-semibold text-gray-300">All Subjects</h2>
           <button
-            onClick={() => setShowForm(true)}
-            className="px-6 py-3 rounded-2xl font-semibold text-sm transition"
-            style={{
-              background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)',
-              boxShadow: '0 0 30px rgba(99,102,241,0.4)',
-            }}
+            onClick={() => setShowForm(!showForm)}
+            className="flex items-center gap-1 text-sm font-medium px-4 py-2 rounded-xl transition"
+            style={{ background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)', boxShadow: '0 0 20px rgba(99,102,241,0.3)' }}
           >
-            + Create New Subject
+            + New Subject
           </button>
         </div>
-      </div>
 
-      {/* Create subject modal */}
-      {showForm && (
-        <div className="fixed inset-0 flex items-center justify-center" style={{ zIndex: 50 }}>
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowForm(false)} />
-          <div className="relative w-full max-w-md mx-4 p-6 rounded-2xl" style={{
-            background: 'rgba(15, 23, 42, 0.95)',
-            border: '1px solid rgba(255,255,255,0.1)',
+        {/* Create form */}
+        {showForm && (
+          <div className="mb-4 p-4 md:p-6 rounded-2xl" style={{
+            background: 'rgba(255,255,255,0.04)',
+            border: '1px solid rgba(255,255,255,0.08)',
             backdropFilter: 'blur(20px)',
           }}>
-            <h2 className="text-lg font-bold mb-1">New Subject</h2>
-            <p className="text-gray-400 text-sm mb-5">Create a subject to start uploading study materials</p>
             <div className="space-y-3">
               <input
                 type="text"
                 value={name}
+                autoFocus
                 onChange={(e) => setName(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && createSubject()}
                 placeholder="e.g. Quantum Physics, Data Structures..."
-                autoFocus
                 className="w-full bg-white/5 border border-white/10 text-white rounded-xl px-4 py-3 focus:outline-none focus:border-blue-500 transition text-sm placeholder-gray-600"
               />
               <input
@@ -196,7 +169,7 @@ export default function Dashboard() {
                 placeholder="Description (optional)"
                 className="w-full bg-white/5 border border-white/10 text-white rounded-xl px-4 py-3 focus:outline-none focus:border-blue-500 transition text-sm placeholder-gray-600"
               />
-              <div className="flex gap-3 pt-1">
+              <div className="flex gap-3">
                 <button
                   onClick={createSubject}
                   disabled={creating || !name.trim()}
@@ -208,14 +181,61 @@ export default function Dashboard() {
                 <button
                   onClick={() => setShowForm(false)}
                   className="px-5 py-3 rounded-xl text-sm text-gray-400 hover:text-white hover:bg-white/5 transition"
-                >
-                  Cancel
-                </button>
+                >Cancel</button>
               </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
+
+        {/* Subjects list */}
+        {loading ? (
+          <div className="text-center text-gray-500 py-20 text-sm">Loading...</div>
+        ) : subjects.length === 0 ? (
+          <div className="text-center py-16">
+            <div className="text-5xl mb-4">📚</div>
+            <p className="text-gray-400">No subjects yet.</p>
+            <button
+              onClick={() => setShowForm(true)}
+              className="mt-4 text-blue-400 text-sm hover:underline"
+            >Create your first subject</button>
+          </div>
+        ) : (
+          <div className="grid gap-3">
+            {subjects.map((subject, i) => {
+              const color = COLORS[i % COLORS.length];
+              return (
+                <div
+                  key={subject.id}
+                  className="group flex items-center justify-between p-4 md:p-5 rounded-2xl transition-all cursor-pointer"
+                  style={{ background: color.bg, border: `1px solid ${color.border}`, backdropFilter: 'blur(10px)' }}
+                  onClick={() => navigate(`/subject/${subject.id}`)}
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="text-2xl shrink-0">{color.icon}</div>
+                    <div className="min-w-0">
+                      <h3 className="font-semibold text-white truncate">{subject.name}</h3>
+                      {subject.description && (
+                        <p className="text-gray-400 text-xs mt-0.5 truncate">{subject.description}</p>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 ml-3 shrink-0" onClick={(e) => e.stopPropagation()}>
+                    <button
+                      onClick={() => navigate(`/subject/${subject.id}`)}
+                      className="text-xs px-3 py-1.5 rounded-xl text-white transition hidden md:block"
+                      style={{ background: 'rgba(255,255,255,0.1)' }}
+                    >Open →</button>
+                    <button
+                      onClick={(e) => deleteSubject(e, subject.id)}
+                      className="text-gray-600 hover:text-red-400 text-sm transition"
+                    >✕</button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
