@@ -19,6 +19,8 @@ export default function SubjectPage() {
   const [newSubjectName, setNewSubjectName] = useState('');
   const [newSubjectDesc, setNewSubjectDesc] = useState('');
   const [selectedMaterial, setSelectedMaterial] = useState(null);
+  const [showSidebar, setShowSidebar] = useState(false);
+  const [showRightPanel, setShowRightPanel] = useState(false);
   const fileRef = useRef();
   const bottomRef = useRef();
   const user = useAuthStore((s) => s.user);
@@ -46,9 +48,7 @@ export default function SubjectPage() {
       const res = await api.get(`/api/subjects/${id}`);
       setSubject(res.data.subject);
       setMaterials(res.data.materials);
-      if (res.data.materials.length > 0) {
-        setSelectedMaterial(res.data.materials[0]);
-      }
+      if (res.data.materials.length > 0) setSelectedMaterial(res.data.materials[0]);
     } catch {}
   }
 
@@ -57,20 +57,14 @@ export default function SubjectPage() {
       const res = await api.get('/api/sessions');
       const subjectSessions = res.data.sessions.filter(s => s.subject_id === id);
       setSessions(subjectSessions);
-      if (subjectSessions.length > 0) {
-        loadSession(subjectSessions[0]);
-      } else {
-        createAutoSession();
-      }
+      if (subjectSessions.length > 0) loadSession(subjectSessions[0]);
+      else createAutoSession();
     } catch {}
   }
 
   async function createAutoSession() {
     try {
-      const res = await api.post('/api/sessions', {
-        title: 'Session 1',
-        subjectId: id,
-      });
+      const res = await api.post('/api/sessions', { title: 'Session 1', subjectId: id });
       setActiveSession(res.data.session);
       setSessions([res.data.session]);
     } catch {}
@@ -81,6 +75,8 @@ export default function SubjectPage() {
     setSending(false);
     setMessages([]);
     setInput('');
+    setShowSidebar(false);
+    setShowRightPanel(false);
     try {
       const res = await api.get(`/api/chat/session/${session.id}`);
       setMessages(res.data.messages);
@@ -92,10 +88,8 @@ export default function SubjectPage() {
     const text = input.trim();
     setInput('');
     setSending(true);
-
     const tempUserMsg = { id: Date.now(), role: 'user', content: text };
     setMessages(prev => [...prev, tempUserMsg]);
-
     try {
       const res = await api.post(`/api/chat/session/${activeSession.id}`, {
         message: text,
@@ -128,7 +122,6 @@ export default function SubjectPage() {
       const newMaterial = res.data.material;
       setMaterials(prev => [newMaterial, ...prev]);
       setSelectedMaterial(newMaterial);
-
       const pollInterval = setInterval(async () => {
         try {
           const statusRes = await api.get(`/api/upload/${id}/materials`);
@@ -136,17 +129,11 @@ export default function SubjectPage() {
           if (updated) {
             setMaterials(statusRes.data.materials);
             setSelectedMaterial(updated);
-            if (updated.parse_status === 'done' || updated.parse_status === 'failed') {
-              clearInterval(pollInterval);
-            }
+            if (updated.parse_status === 'done' || updated.parse_status === 'failed') clearInterval(pollInterval);
           }
-        } catch {
-          clearInterval(pollInterval);
-        }
+        } catch { clearInterval(pollInterval); }
       }, 3000);
-
       setTimeout(() => clearInterval(pollInterval), 180000);
-
     } catch (err) {
       alert(err.response?.data?.error || 'Upload failed');
     } finally {
@@ -166,10 +153,7 @@ export default function SubjectPage() {
   async function createNewSubject() {
     if (!newSubjectName.trim()) return;
     try {
-      const res = await api.post('/api/subjects', {
-        name: newSubjectName,
-        description: newSubjectDesc,
-      });
+      const res = await api.post('/api/subjects', { name: newSubjectName, description: newSubjectDesc });
       navigate(`/subject/${res.data.subject.id}`);
       setShowNewSubject(false);
       setNewSubjectName('');
@@ -181,11 +165,8 @@ export default function SubjectPage() {
     e.stopPropagation();
     if (!confirm('Delete this subject?')) return;
     await api.delete(`/api/subjects/${subjectId}`);
-    if (subjectId === id) {
-      navigate('/dashboard');
-    } else {
-      setSubjects(subjects.filter(s => s.id !== subjectId));
-    }
+    if (subjectId === id) navigate('/dashboard');
+    else setSubjects(subjects.filter(s => s.id !== subjectId));
   }
 
   function statusColor(s) {
@@ -195,153 +176,287 @@ export default function SubjectPage() {
     return '#6b7280';
   }
 
-  return (
-    <div className="flex h-screen bg-gray-950 text-white overflow-hidden">
-
-      {/* LEFT SIDEBAR */}
-      <div className="flex flex-col w-64 shrink-0 border-r border-white/5" style={{
-        background: 'rgba(5,10,25,0.95)',
-      }}>
-        <div className="px-4 py-4 border-b border-white/5">
+  const SidebarContent = () => (
+    <div className="flex flex-col h-full">
+      <div className="px-4 py-4 border-b border-white/5">
+        <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate('/dashboard')}>
             <img src="/Kurio.png" alt="Kurio" className="w-6 h-6 rounded-full object-cover" />
             <span className="font-bold tracking-tight">Kuriosity</span>
           </div>
+          <button onClick={() => setShowSidebar(false)} className="text-gray-500 hover:text-white md:hidden">✕</button>
         </div>
+      </div>
 
-        <div className="flex-1 overflow-y-auto px-3 py-3">
-          <div className="flex items-center justify-between px-1 mb-2">
-            <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Subjects</span>
-            <button
-              onClick={() => setShowNewSubject(true)}
-              className="text-gray-400 hover:text-white text-lg leading-none transition"
-            >+</button>
-          </div>
-
-          <div className="space-y-0.5">
-            {subjects.map((s) => (
-              <div
-                key={s.id}
-                onClick={() => navigate(`/subject/${s.id}`)}
-                className="group flex items-center justify-between px-2 py-2 rounded-lg cursor-pointer transition"
-                style={{
-                  background: s.id === id ? 'rgba(99,102,241,0.15)' : 'transparent',
-                  borderLeft: s.id === id ? '2px solid #6366f1' : '2px solid transparent',
-                }}
-              >
-                <div className="flex items-center gap-2 min-w-0">
-                  <span className="text-sm">📁</span>
-                  <span className="text-sm truncate" style={{ color: s.id === id ? '#a5b4fc' : '#9ca3af' }}>
-                    {s.name}
-                  </span>
-                </div>
-                <button
-                  onClick={(e) => deleteSubject(e, s.id)}
-                  className="opacity-0 group-hover:opacity-100 text-gray-600 hover:text-red-400 text-xs ml-1 transition shrink-0"
-                >✕</button>
+      <div className="flex-1 overflow-y-auto px-3 py-3">
+        <div className="flex items-center justify-between px-1 mb-2">
+          <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Subjects</span>
+          <button onClick={() => setShowNewSubject(true)} className="text-gray-400 hover:text-white text-lg leading-none">+</button>
+        </div>
+        <div className="space-y-0.5">
+          {subjects.map((s) => (
+            <div
+              key={s.id}
+              onClick={() => navigate(`/subject/${s.id}`)}
+              className="group flex items-center justify-between px-2 py-2 rounded-lg cursor-pointer transition"
+              style={{
+                background: s.id === id ? 'rgba(99,102,241,0.15)' : 'transparent',
+                borderLeft: s.id === id ? '2px solid #6366f1' : '2px solid transparent',
+              }}
+            >
+              <div className="flex items-center gap-2 min-w-0">
+                <span className="text-sm">📁</span>
+                <span className="text-sm truncate" style={{ color: s.id === id ? '#a5b4fc' : '#9ca3af' }}>{s.name}</span>
               </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Profile */}
-        <div className="border-t border-white/5 px-4 py-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <img src="/Teacher.png" alt="Teacher" className="w-6 h-6 rounded-full object-cover" />
-              <span className="text-sm text-gray-300">{user?.name}</span>
+              <button onClick={(e) => deleteSubject(e, s.id)} className="opacity-0 group-hover:opacity-100 text-gray-600 hover:text-red-400 text-xs ml-1 shrink-0">✕</button>
             </div>
-            <button
-              onClick={() => { logout(); navigate('/login'); }}
-              className="text-xs text-gray-600 hover:text-white transition"
-            >Logout</button>
+          ))}
+        </div>
+      </div>
+
+      <div className="border-t border-white/5 px-4 py-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <img src="/Teacher.png" alt="Teacher" className="w-6 h-6 rounded-full object-cover" />
+            <span className="text-sm text-gray-300">{user?.name}</span>
+          </div>
+          <button onClick={() => { logout(); navigate('/login'); }} className="text-xs text-gray-600 hover:text-white transition">Logout</button>
+        </div>
+      </div>
+    </div>
+  );
+
+  const RightPanelContent = () => (
+    <div className="flex flex-col h-full">
+      <div className="px-4 py-4 border-b border-white/5">
+        <div className="flex items-center justify-between">
+          <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Study Materials</span>
+          <div className="flex items-center gap-2">
+            <button onClick={() => fileRef.current.click()} className="text-xs text-blue-400 hover:text-blue-300">+ Upload</button>
+            <button onClick={() => setShowRightPanel(false)} className="text-gray-500 hover:text-white md:hidden text-sm">✕</button>
           </div>
         </div>
       </div>
 
+      <div className="flex-1 overflow-y-auto px-3 py-3 space-y-2">
+        {materials.length === 0 ? (
+          <div onClick={() => fileRef.current.click()} className="flex flex-col items-center justify-center py-10 rounded-xl border-2 border-dashed border-white/10 cursor-pointer hover:border-blue-500/40 transition">
+            <span className="text-2xl mb-2">📎</span>
+            <p className="text-xs text-gray-500 text-center">Upload docs<br/>PDF, PPT, TXT</p>
+          </div>
+        ) : materials.map((m) => (
+          <div
+            key={m.id}
+            onClick={() => setSelectedMaterial(m)}
+            className="p-3 rounded-xl cursor-pointer transition"
+            style={{
+              background: selectedMaterial?.id === m.id ? 'rgba(99,102,241,0.15)' : 'rgba(255,255,255,0.03)',
+              border: selectedMaterial?.id === m.id ? '1px solid rgba(99,102,241,0.3)' : '1px solid rgba(255,255,255,0.06)',
+            }}
+          >
+            <div className="flex items-start justify-between gap-1">
+              <div className="min-w-0">
+                <p className="text-xs font-medium text-gray-200 truncate">{m.original_name}</p>
+                <div className="flex items-center gap-1 mt-1">
+                  <div className="w-1.5 h-1.5 rounded-full" style={{ background: statusColor(m.parse_status) }}></div>
+                  <span className="text-xs" style={{ color: statusColor(m.parse_status) }}>{m.parse_status}</span>
+                </div>
+              </div>
+              <button onClick={(e) => { e.stopPropagation(); deleteMaterial(m.id); }} className="text-gray-600 hover:text-red-400 text-xs shrink-0">✕</button>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {selectedMaterial && (
+        <div className="border-t border-white/5 px-4 py-3">
+          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Description</p>
+          <p className="text-xs text-gray-400 leading-relaxed">
+            {selectedMaterial.original_name}<br />
+            <span className="text-gray-600">
+              {(selectedMaterial.file_size / 1024).toFixed(0)} KB · {new Date(selectedMaterial.uploaded_at).toLocaleDateString()}
+            </span>
+          </p>
+          <div className="mt-1 flex items-center gap-1">
+            <div className="w-1.5 h-1.5 rounded-full" style={{ background: statusColor(selectedMaterial.parse_status) }}></div>
+            <span className="text-xs" style={{ color: statusColor(selectedMaterial.parse_status) }}>
+              {selectedMaterial.parse_status === 'done' ? 'Ready for chat' : selectedMaterial.parse_status}
+            </span>
+          </div>
+        </div>
+      )}
+
+      <div className="border-t border-white/5 px-3 py-3">
+        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 px-1">Sessions</p>
+        <div className="space-y-1">
+          {sessions.map((s) => (
+            <div
+              key={s.id}
+              className="group flex items-center justify-between px-2 py-1.5 rounded-lg cursor-pointer text-xs transition"
+              style={{
+                background: activeSession?.id === s.id ? 'rgba(99,102,241,0.15)' : 'transparent',
+                color: activeSession?.id === s.id ? '#a5b4fc' : '#6b7280',
+              }}
+            >
+              <span onClick={() => loadSession(s)} className="flex-1 truncate">{s.title}</span>
+              <button
+                onClick={async (e) => {
+                  e.stopPropagation();
+                  if (!confirm('Delete this session?')) return;
+                  await api.delete(`/api/sessions/${s.id}`);
+                  const updated = sessions.filter(x => x.id !== s.id);
+                  setSessions(updated);
+                  if (activeSession?.id === s.id) {
+                    if (updated.length > 0) loadSession(updated[0]);
+                    else { setActiveSession(null); setMessages([]); }
+                  }
+                }}
+                className="opacity-0 group-hover:opacity-100 text-gray-600 hover:text-red-400 transition ml-1 shrink-0"
+              >✕</button>
+            </div>
+          ))}
+          <button
+            onClick={async () => {
+              const title = `Session ${sessions.length + 1}`;
+              const res = await api.post('/api/sessions', { title, subjectId: id });
+              const newSession = res.data.session;
+              setSessions(prev => [newSession, ...prev]);
+              setActiveSession(newSession);
+              setMessages([]);
+              setSending(false);
+            }}
+            className="w-full text-left px-2 py-1.5 rounded-lg text-xs text-gray-600 hover:text-gray-400 hover:bg-white/5 transition"
+          >+ New Session</button>
+        </div>
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="flex h-screen bg-gray-950 text-white overflow-hidden">
+
+      {/* Mobile sidebar overlay */}
+      {showSidebar && (
+        <div className="fixed inset-0 z-40 flex md:hidden">
+          <div className="absolute inset-0 bg-black/60" onClick={() => setShowSidebar(false)} />
+          <div className="relative w-72 h-full border-r border-white/5 z-50" style={{ background: 'rgba(5,10,25,0.98)' }}>
+            <SidebarContent />
+          </div>
+        </div>
+      )}
+
+      {/* Mobile right panel overlay */}
+      {showRightPanel && (
+        <div className="fixed inset-0 z-40 flex justify-end md:hidden">
+          <div className="absolute inset-0 bg-black/60" onClick={() => setShowRightPanel(false)} />
+          <div className="relative w-72 h-full border-l border-white/5 z-50" style={{ background: 'rgba(5,10,25,0.98)' }}>
+            <RightPanelContent />
+          </div>
+        </div>
+      )}
+
+      {/* Desktop left sidebar */}
+      <div className="hidden md:flex flex-col w-64 shrink-0 border-r border-white/5" style={{ background: 'rgba(5,10,25,0.95)' }}>
+        <SidebarContent />
+      </div>
+
       {/* MAIN CHAT AREA */}
       <div className="flex-1 flex flex-col min-w-0">
-        <div className="px-5 py-3.5 border-b border-white/5 flex items-center justify-between shrink-0" style={{
-          background: 'rgba(10,15,35,0.8)',
-        }}>
-          <div>
-            <h1 className="font-semibold text-base">{subject?.name}</h1>
-            <p className="text-xs text-gray-500">{subject?.description}</p>
+
+        {/* Top bar */}
+        <div className="px-4 py-3 border-b border-white/5 flex items-center justify-between shrink-0" style={{ background: 'rgba(10,15,35,0.8)' }}>
+          <div className="flex items-center gap-3">
+            {/* Mobile hamburger */}
+            <button
+              onClick={() => setShowSidebar(true)}
+              className="md:hidden text-gray-400 hover:text-white p-1"
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
+              </svg>
+            </button>
+            <div>
+              <h1 className="font-semibold text-sm md:text-base leading-tight">{subject?.name}</h1>
+              <p className="text-xs text-gray-500 hidden md:block">{subject?.description}</p>
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            <img src="/Kurio.png" alt="Kurio" className="w-5 h-5 rounded-full object-cover" />
-            <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse"></div>
-            <span className="text-xs text-gray-400">Kurio is ready</span>
+
+          <div className="flex items-center gap-2 md:gap-3">
+            {/* Kurio status */}
+            <div className="hidden md:flex items-center gap-2">
+              <img src="/Kurio.png" alt="Kurio" className="w-5 h-5 rounded-full object-cover" />
+              <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse"></div>
+              <span className="text-xs text-gray-400">Kurio is ready</span>
+            </div>
+
+            {/* Contact / Portfolio button */}
+            
+              href="https://gokulraj9488.github.io/Gokulraj-portfolio/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium transition"
+              style={{
+                background: 'rgba(99,102,241,0.15)',
+                border: '1px solid rgba(99,102,241,0.3)',
+                color: '#a5b4fc',
+              }}
+            >
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z"/>
+              </svg>
+              Contact
+            </a>
+
+            {/* Mobile sessions button */}
+            <button
+              onClick={() => setShowRightPanel(true)}
+              className="md:hidden flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-medium transition"
+              style={{
+                background: 'rgba(255,255,255,0.05)',
+                border: '1px solid rgba(255,255,255,0.08)',
+                color: '#9ca3af',
+              }}
+            >
+              Sessions ˄
+            </button>
           </div>
         </div>
 
         {/* Messages */}
-        <div className="flex-1 overflow-y-auto px-6 py-5 space-y-4" style={{
-          background: 'rgba(3,7,18,0.6)',
-        }}>
+        <div className="flex-1 overflow-y-auto px-4 md:px-6 py-5 space-y-4" style={{ background: 'rgba(3,7,18,0.6)' }}>
           {messages.length === 0 && !sending && (
-            <div className="flex flex-col items-center justify-center h-full text-center">
-              <img src="/Kurio.png" alt="Kurio" className="w-20 h-20 rounded-full object-cover mb-4" style={{ border: '3px solid rgba(99,102,241,0.4)' }} />
+            <div className="flex flex-col items-center justify-center h-full text-center px-4">
+              <img src="/Kurio.png" alt="Kurio" className="w-16 h-16 md:w-20 md:h-20 rounded-full object-cover mb-4" style={{ border: '3px solid rgba(99,102,241,0.4)' }} />
               <p className="text-gray-400 font-medium">Hi! I'm Kurio, your AI student</p>
               <p className="text-gray-600 text-sm mt-1">Upload a study material and start teaching me!</p>
             </div>
           )}
 
           {messages.map((msg, i) => (
-            <div
-              key={msg.id || i}
-              className={`flex items-end gap-2 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
-            >
-              {/* Kurio avatar on left */}
+            <div key={msg.id || i} className={`flex items-end gap-2 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
               {msg.role === 'assistant' && (
-                <img
-                  src="/Kurio.png"
-                  alt="Kurio"
-                  className="w-8 h-8 rounded-full object-cover shrink-0 mb-1"
-                  style={{ border: '2px solid rgba(99,102,241,0.4)' }}
-                />
+                <img src="/Kurio.png" alt="Kurio" className="w-7 h-7 rounded-full object-cover shrink-0 mb-1" style={{ border: '2px solid rgba(99,102,241,0.4)' }} />
               )}
-
-              {/* Message bubble */}
               <div
-                className="max-w-lg px-4 py-2.5 text-sm leading-relaxed"
+                className="max-w-xs md:max-w-lg px-4 py-2.5 text-sm leading-relaxed"
                 style={{
-                  background: msg.role === 'user'
-                    ? 'linear-gradient(135deg, #3b82f6, #6366f1)'
-                    : 'rgba(255,255,255,0.06)',
+                  background: msg.role === 'user' ? 'linear-gradient(135deg, #3b82f6, #6366f1)' : 'rgba(255,255,255,0.06)',
                   border: msg.role === 'assistant' ? '1px solid rgba(255,255,255,0.08)' : 'none',
                   borderRadius: msg.role === 'user' ? '18px 18px 4px 18px' : '18px 18px 18px 4px',
                 }}
               >
                 {msg.content}
               </div>
-
-              {/* Teacher avatar on right */}
               {msg.role === 'user' && (
-                <img
-                  src="/Teacher.png"
-                  alt="You"
-                  className="w-8 h-8 rounded-full object-cover shrink-0 mb-1"
-                  style={{ border: '2px solid rgba(59,130,246,0.4)' }}
-                />
+                <img src="/Teacher.png" alt="You" className="w-7 h-7 rounded-full object-cover shrink-0 mb-1" style={{ border: '2px solid rgba(59,130,246,0.4)' }} />
               )}
             </div>
           ))}
 
-          {/* Kurio typing indicator */}
           {sending && (
             <div className="flex items-end gap-2 justify-start">
-              <img
-                src="/Kurio.png"
-                alt="Kurio"
-                className="w-8 h-8 rounded-full object-cover shrink-0 mb-1"
-                style={{ border: '2px solid rgba(99,102,241,0.4)' }}
-              />
-              <div className="px-4 py-3 rounded-2xl" style={{
-                background: 'rgba(255,255,255,0.06)',
-                border: '1px solid rgba(255,255,255,0.08)',
-                borderRadius: '18px 18px 18px 4px',
-              }}>
+              <img src="/Kurio.png" alt="Kurio" className="w-7 h-7 rounded-full object-cover shrink-0 mb-1" style={{ border: '2px solid rgba(99,102,241,0.4)' }} />
+              <div className="px-4 py-3 rounded-2xl" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '18px 18px 18px 4px' }}>
                 <div className="flex gap-1 items-center">
                   <div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
                   <div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
@@ -354,11 +469,8 @@ export default function SubjectPage() {
         </div>
 
         {/* Input bar */}
-        <div className="px-4 py-3 border-t border-white/5 shrink-0" style={{ background: 'rgba(5,10,25,0.9)' }}>
-          <div className="flex items-center gap-2 px-3 py-2 rounded-2xl" style={{
-            background: 'rgba(255,255,255,0.05)',
-            border: '1px solid rgba(255,255,255,0.08)',
-          }}>
+        <div className="px-3 md:px-4 py-3 border-t border-white/5 shrink-0" style={{ background: 'rgba(5,10,25,0.9)' }}>
+          <div className="flex items-center gap-2 px-3 py-2 rounded-2xl" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}>
             <button
               onClick={() => fileRef.current.click()}
               disabled={uploading}
@@ -378,7 +490,7 @@ export default function SubjectPage() {
               placeholder="Teach Kurio something..."
               rows={1}
               className="flex-1 bg-transparent text-white text-sm focus:outline-none resize-none placeholder-gray-600"
-              style={{ maxHeight: 120 }}
+              style={{ maxHeight: 100 }}
             />
 
             <button
@@ -392,137 +504,20 @@ export default function SubjectPage() {
               </svg>
             </button>
           </div>
-          <p className="text-xs text-gray-700 mt-1.5 ml-1">Enter to send · Shift+Enter for new line · + to upload PDF/PPT</p>
+          <p className="text-xs text-gray-700 mt-1.5 ml-1 hidden md:block">Enter to send · Shift+Enter for new line · + to upload PDF/PPT</p>
         </div>
       </div>
 
-      {/* RIGHT PANEL */}
-      <div className="w-64 shrink-0 border-l border-white/5 flex flex-col" style={{
-        background: 'rgba(5,10,25,0.95)',
-      }}>
-        <div className="px-4 py-4 border-b border-white/5">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Study Materials</span>
-            <button onClick={() => fileRef.current.click()} className="text-xs text-blue-400 hover:text-blue-300 transition">+ Upload</button>
-          </div>
-        </div>
-
-        <div className="flex-1 overflow-y-auto px-3 py-3 space-y-2">
-          {materials.length === 0 ? (
-            <div
-              onClick={() => fileRef.current.click()}
-              className="flex flex-col items-center justify-center py-10 rounded-xl border-2 border-dashed border-white/10 cursor-pointer hover:border-blue-500/40 transition"
-            >
-              <span className="text-2xl mb-2">📎</span>
-              <p className="text-xs text-gray-500 text-center">Upload docs<br/>PDF, PPT, TXT</p>
-            </div>
-          ) : (
-            materials.map((m) => (
-              <div
-                key={m.id}
-                onClick={() => setSelectedMaterial(m)}
-                className="p-3 rounded-xl cursor-pointer transition"
-                style={{
-                  background: selectedMaterial?.id === m.id ? 'rgba(99,102,241,0.15)' : 'rgba(255,255,255,0.03)',
-                  border: selectedMaterial?.id === m.id ? '1px solid rgba(99,102,241,0.3)' : '1px solid rgba(255,255,255,0.06)',
-                }}
-              >
-                <div className="flex items-start justify-between gap-1">
-                  <div className="min-w-0">
-                    <p className="text-xs font-medium text-gray-200 truncate">{m.original_name}</p>
-                    <div className="flex items-center gap-1 mt-1">
-                      <div className="w-1.5 h-1.5 rounded-full" style={{ background: statusColor(m.parse_status) }}></div>
-                      <span className="text-xs" style={{ color: statusColor(m.parse_status) }}>{m.parse_status}</span>
-                    </div>
-                  </div>
-                  <button
-                    onClick={(e) => { e.stopPropagation(); deleteMaterial(m.id); }}
-                    className="text-gray-600 hover:text-red-400 text-xs shrink-0 transition"
-                  >✕</button>
-                </div>
-              </div>
-            ))
-          )}
-        </div>
-
-        {selectedMaterial && (
-          <div className="border-t border-white/5 px-4 py-4">
-            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Description</p>
-            <p className="text-xs text-gray-400 leading-relaxed">
-              {selectedMaterial.original_name}<br />
-              <span className="text-gray-600">
-                {(selectedMaterial.file_size / 1024).toFixed(0)} KB ·{' '}
-                {new Date(selectedMaterial.uploaded_at).toLocaleDateString()}
-              </span>
-            </p>
-            <div className="mt-2 flex items-center gap-1">
-              <div className="w-1.5 h-1.5 rounded-full" style={{ background: statusColor(selectedMaterial.parse_status) }}></div>
-              <span className="text-xs" style={{ color: statusColor(selectedMaterial.parse_status) }}>
-                {selectedMaterial.parse_status === 'done' ? 'Ready for chat' : selectedMaterial.parse_status}
-              </span>
-            </div>
-          </div>
-        )}
-
-        <div className="border-t border-white/5 px-3 py-3">
-          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 px-1">Sessions</p>
-          <div className="space-y-1">
-            {sessions.map((s) => (
-              <div
-                key={s.id}
-                className="group flex items-center justify-between px-2 py-1.5 rounded-lg cursor-pointer text-xs transition"
-                style={{
-                  background: activeSession?.id === s.id ? 'rgba(99,102,241,0.15)' : 'transparent',
-                  color: activeSession?.id === s.id ? '#a5b4fc' : '#6b7280',
-                }}
-              >
-                <span onClick={() => loadSession(s)} className="flex-1 truncate">{s.title}</span>
-                <button
-                  onClick={async (e) => {
-                    e.stopPropagation();
-                    if (!confirm('Delete this session?')) return;
-                    await api.delete(`/api/sessions/${s.id}`);
-                    const updated = sessions.filter(x => x.id !== s.id);
-                    setSessions(updated);
-                    if (activeSession?.id === s.id) {
-                      if (updated.length > 0) {
-                        loadSession(updated[0]);
-                      } else {
-                        setActiveSession(null);
-                        setMessages([]);
-                      }
-                    }
-                  }}
-                  className="opacity-0 group-hover:opacity-100 text-gray-600 hover:text-red-400 transition ml-1 shrink-0"
-                >✕</button>
-              </div>
-            ))}
-            <button
-              onClick={async () => {
-                const title = `Session ${sessions.length + 1}`;
-                const res = await api.post('/api/sessions', { title, subjectId: id });
-                const newSession = res.data.session;
-                setSessions(prev => [newSession, ...prev]);
-                setActiveSession(newSession);
-                setMessages([]);
-                setSending(false);
-              }}
-              className="w-full text-left px-2 py-1.5 rounded-lg text-xs text-gray-600 hover:text-gray-400 hover:bg-white/5 transition"
-            >
-              + New Session
-            </button>
-          </div>
-        </div>
+      {/* Desktop right panel */}
+      <div className="hidden md:flex flex-col w-64 shrink-0 border-l border-white/5" style={{ background: 'rgba(5,10,25,0.95)' }}>
+        <RightPanelContent />
       </div>
 
       {/* New subject modal */}
       {showNewSubject && (
-        <div className="fixed inset-0 flex items-center justify-center" style={{ zIndex: 50 }}>
+        <div className="fixed inset-0 flex items-center justify-center z-50 px-4">
           <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={() => setShowNewSubject(false)} />
-          <div className="relative w-full max-w-sm mx-4 p-6 rounded-2xl" style={{
-            background: 'rgba(15,23,42,0.98)',
-            border: '1px solid rgba(255,255,255,0.1)',
-          }}>
+          <div className="relative w-full max-w-sm p-6 rounded-2xl" style={{ background: 'rgba(15,23,42,0.98)', border: '1px solid rgba(255,255,255,0.1)' }}>
             <h2 className="font-bold mb-4">New Subject</h2>
             <div className="space-y-3">
               <input
