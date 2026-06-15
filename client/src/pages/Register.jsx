@@ -46,12 +46,12 @@ export default function Register() {
       <div className="w-full max-w-md relative" style={{ zIndex: 2 }}>
 
         <div className="text-center mb-8">
-          <div className="text-5xl mb-3">🎓</div>
-          <h1 className="text-4xl font-bold text-white tracking-tight">StudyBud</h1>
-          <p className="text-purple-400 mt-2 text-sm font-medium tracking-widest uppercase">
-            Your AI Student Awaits
-          </p>
-        </div>
+  <img src="/Kurio.png" alt="Kurio" className="w-20 h-20 rounded-full mx-auto mb-3 object-cover" style={{ border: '3px solid rgba(139,92,246,0.5)' }} />
+  <h1 className="text-4xl font-bold text-white tracking-tight">Kuriosity</h1>
+  <p className="text-purple-400 mt-2 text-sm font-medium tracking-widest uppercase">
+    Your AI Student Awaits
+  </p>
+</div>
 
         <div style={{
           background: 'rgba(15, 23, 42, 0.75)',

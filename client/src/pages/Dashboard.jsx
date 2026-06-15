@@ -58,9 +58,9 @@ export default function Dashboard() {
         {/* Logo */}
         <div className="px-5 py-5 border-b border-white/5">
           <div className="flex items-center gap-2">
-            <span className="text-xl">🎓</span>
-            <span className="font-bold text-lg tracking-tight">StudyBud</span>
-          </div>
+  <img src="/Kurio.png" alt="Kurio" className="w-7 h-7 rounded-full object-cover" />
+  <span className="font-bold text-lg tracking-tight">Kuriosity</span>
+</div>
           <p className="text-xs text-gray-500 mt-0.5 ml-7">AI Learning Platform</p>
         </div>
 

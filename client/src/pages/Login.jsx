@@ -46,13 +46,13 @@ export default function Login() {
       <div className="w-full max-w-md relative" style={{ zIndex: 2 }}>
 
         {/* Logo */}
-        <div className="text-center mb-8">
-          <div className="text-5xl mb-3">🎓</div>
-          <h1 className="text-4xl font-bold text-white tracking-tight">StudyBud</h1>
-          <p className="text-blue-400 mt-2 text-sm font-medium tracking-widest uppercase">
-            Teach · Learn · Discover
-          </p>
-        </div>
+       <div className="text-center mb-8">
+  <img src="/Kurio.png" alt="Kurio" className="w-20 h-20 rounded-full mx-auto mb-3 object-cover" style={{ border: '3px solid rgba(99,102,241,0.5)' }} />
+  <h1 className="text-4xl font-bold text-white tracking-tight">Kuriosity</h1>
+  <p className="text-blue-400 mt-2 text-sm font-medium tracking-widest uppercase">
+    Teach · Learn · Discover
+  </p>
+</div>
 
         {/* Glass card */}
         <div style={{
