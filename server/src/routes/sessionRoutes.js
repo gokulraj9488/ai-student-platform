@@ -1,3 +1,4 @@
+const { getAll } = require('../config/db');
 const express = require('express');
 const router = express.Router();
 const auth = require('../middleware/auth');
@@ -39,5 +40,63 @@ router.patch('/memory/:subjectId/strong/:topic', async (req, res, next) => {
     res.json({ message: `Topic marked as strong` });
   } catch (err) { next(err); }
 });
+router.get('/analytics/:subjectId', async (req, res, next) => {
+  try {
+    const { subjectId } = req.params;
+    const userId = req.user.id;
 
+    const materials = await getAll(
+      'SELECT COUNT(*) as count FROM materials WHERE subject_id = $1 AND user_id = $2',
+      [subjectId, userId]
+    );
+
+    const sessions = await getAll(
+      'SELECT COUNT(*) as count FROM study_sessions WHERE subject_id = $1 AND user_id = $2',
+      [subjectId, userId]
+    );
+
+    const messages = await getAll(
+      `SELECT COUNT(*) as count FROM messages m
+       JOIN study_sessions s ON m.session_id = s.id
+       WHERE s.subject_id = $1 AND s.user_id = $2 AND m.role = 'user'`,
+      [subjectId, userId]
+    );
+
+    const questions = await getAll(
+      `SELECT COUNT(*) as count FROM questions q
+       JOIN study_sessions s ON q.session_id = s.id
+       WHERE s.subject_id = $1 AND s.user_id = $2`,
+      [subjectId, userId]
+    );
+
+    const weakTopics = await getAll(
+      "SELECT topic, ask_count FROM topic_memory WHERE user_id = $1 AND subject_id = $2 AND strength = 'weak' ORDER BY ask_count DESC LIMIT 5",
+      [userId, subjectId]
+    );
+
+    const strongTopics = await getAll(
+      "SELECT topic FROM topic_memory WHERE user_id = $1 AND subject_id = $2 AND strength = 'strong' ORDER BY last_seen DESC LIMIT 5",
+      [userId, subjectId]
+    );
+
+    const allTopics = await getAll(
+      'SELECT strength, COUNT(*) as count FROM topic_memory WHERE user_id = $1 AND subject_id = $2 GROUP BY strength',
+      [userId, subjectId]
+    );
+
+    const totalTopics = allTopics.reduce((sum, t) => sum + parseInt(t.count), 0);
+    const strongCount = allTopics.find(t => t.strength === 'strong')?.count || 0;
+    const accuracy = totalTopics > 0 ? Math.round((strongCount / totalTopics) * 100) : 0;
+
+    res.json({
+      pdfsUploaded: parseInt(materials[0]?.count || 0),
+      totalSessions: parseInt(sessions[0]?.count || 0),
+      questionsAnswered: parseInt(messages[0]?.count || 0),
+      questionsAsked: parseInt(questions[0]?.count || 0),
+      accuracyPercent: accuracy,
+      weakTopics,
+      strongTopics,
+    });
+  } catch (err) { next(err); }
+});
 module.exports = router;

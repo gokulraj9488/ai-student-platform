@@ -89,5 +89,36 @@ ${context}`;
 
   return messages;
 }
+function buildEvaluationPrompt(question, userAnswer, context) {
+  const contextText = context
+    .map((c, i) => `[Source ${i + 1}]: ${c.document || c}`)
+    .join('\n\n');
 
+  const systemPrompt = `You are an expert teacher evaluating a student's answer.
+
+The student was asked a question. Evaluate their answer based on the study material provided.
+
+Respond in this EXACT JSON format, nothing else:
+{
+  "score": <number 1-10>,
+  "accuracy": "<percentage like 75%>",
+  "feedback": "<2-3 sentences of encouraging feedback>",
+  "missing_concepts": ["concept 1", "concept 2"],
+  "strong_points": ["point 1", "point 2"],
+  "suggested_revision": ["topic 1", "topic 2"],
+  "verdict": "<one of: Excellent | Good | Needs Work | Try Again>"
+}
+
+Study material for reference:
+${contextText}
+
+Question asked: ${question}`;
+
+  return [
+    { role: 'system', content: systemPrompt },
+    { role: 'user', content: `Student's answer: ${userAnswer}` },
+  ];
+}
+
+module.exports = { buildStudentPrompt, buildEvaluationPrompt };
 module.exports = { buildStudentPrompt };

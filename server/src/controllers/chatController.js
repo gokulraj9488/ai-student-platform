@@ -98,5 +98,44 @@ async function clearHistory(req, res, next) {
     res.json({ message: 'Chat history cleared' });
   } catch (err) { next(err); }
 }
+async function evaluateUserAnswer(req, res, next) {
+  try {
+    const { sessionId } = req.params;
+    const { question, answer, subjectId } = req.body;
 
-module.exports = { sendMessage, getChatHistory, clearHistory };
+    if (!question || !answer || !subjectId) {
+      return res.status(400).json({ error: 'question, answer and subjectId are required' });
+    }
+
+    const { retrieveRelevantChunks } = require('../services/retrievalService');
+    const { evaluateAnswer } = require('../services/llmService');
+    const { buildEvaluationPrompt } = require('../utils/promptBuilder');
+
+    const chunks = await retrieveRelevantChunks(question, subjectId);
+    const prompt = buildEvaluationPrompt(question, answer, chunks);
+    const evaluation = await evaluateAnswer(prompt);
+
+    await runQuery(
+      'INSERT INTO messages (id, session_id, user_id, role, content) VALUES ($1,$2,$3,$4,$5)',
+      [require('uuid').v4(), sessionId, req.user.id, 'user', `[Answer to: "${question}"]\n${answer}`]
+    );
+
+    const evalText = `📊 **Evaluation Result**\n\n` +
+      `**Score: ${evaluation.score}/10** (${evaluation.accuracy} accuracy) — ${evaluation.verdict}\n\n` +
+      `${evaluation.feedback}\n\n` +
+      (evaluation.strong_points?.length ? `✅ **Strong points:** ${evaluation.strong_points.join(', ')}\n\n` : '') +
+      (evaluation.missing_concepts?.length ? `⚠️ **Missing concepts:** ${evaluation.missing_concepts.join(', ')}\n\n` : '') +
+      (evaluation.suggested_revision?.length ? `📖 **Revise:** ${evaluation.suggested_revision.join(', ')}` : '');
+
+    const aiMsgId = require('uuid').v4();
+    await runQuery(
+      'INSERT INTO messages (id, session_id, user_id, role, content) VALUES ($1,$2,$3,$4,$5)',
+      [aiMsgId, sessionId, req.user.id, 'assistant', evalText]
+    );
+
+    res.json({ evaluation, evalMessage: { id: aiMsgId, role: 'assistant', content: evalText } });
+  } catch (err) {
+    next(err);
+  }
+}
+module.exports = { sendMessage, getChatHistory, clearHistory, evaluateUserAnswer };
