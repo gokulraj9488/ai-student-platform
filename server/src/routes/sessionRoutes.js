@@ -80,13 +80,21 @@ router.get('/analytics/:subjectId', async (req, res, next) => {
     );
 
     const allTopics = await getAll(
-      'SELECT strength, COUNT(*) as count FROM topic_memory WHERE user_id = $1 AND subject_id = $2 GROUP BY strength',
-      [userId, subjectId]
-    );
+  'SELECT strength, COUNT(*) as count FROM topic_memory WHERE user_id = $1 AND subject_id = $2 GROUP BY strength',
+  [userId, subjectId]
+);
 
-    const totalTopics = allTopics.reduce((sum, t) => sum + parseInt(t.count), 0);
-    const strongCount = allTopics.find(t => t.strength === 'strong')?.count || 0;
-    const accuracy = totalTopics > 0 ? Math.round((strongCount / totalTopics) * 100) : 0;
+const totalTopics = allTopics.reduce((sum, t) => sum + parseInt(t.count), 0);
+const strongCount = parseInt(allTopics.find(t => t.strength === 'strong')?.count || 0);
+const developingCount = parseInt(allTopics.find(t => t.strength === 'developing')?.count || 0);
+const unknownCount = parseInt(allTopics.find(t => t.strength === 'unknown')?.count || 0);
+const weakCount = parseInt(allTopics.find(t => t.strength === 'weak')?.count || 0);
+
+let accuracy = 0;
+if (totalTopics > 0) {
+  const weightedScore = (strongCount * 100) + (developingCount * 60) + (unknownCount * 40) + (weakCount * 10);
+  accuracy = Math.round(weightedScore / totalTopics);
+}
 
     res.json({
       pdfsUploaded: parseInt(materials[0]?.count || 0),

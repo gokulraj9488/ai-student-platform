@@ -94,6 +94,16 @@ async function initDB() {
       last_seen TIMESTAMP DEFAULT NOW()
     )
   `);
+  await pool.query(`
+  CREATE TABLE IF NOT EXISTS otp_verifications (
+    id TEXT PRIMARY KEY,
+    email TEXT NOT NULL,
+    otp TEXT NOT NULL,
+    expires_at TIMESTAMP NOT NULL,
+    verified BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT NOW()
+  )
+`);
 
   console.log('✅ Database initialised');
 }
