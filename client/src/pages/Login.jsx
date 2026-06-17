@@ -91,7 +91,9 @@ export default function Login() {
             >
               {loading ? 'Signing in...' : 'Sign in'}
             </button>
-
+            <p className="text-center text-gray-600 text-xs mt-2">
+              Forgot password? Contact <a href="mailto:gokulraj.gokul3003@gmail.com" className="text-blue-400 hover:underline">support</a>
+            </p>
             {/* Divider */}
             <div className="flex items-center gap-3 my-1">
               <div className="flex-1 h-px bg-white/10"></div>

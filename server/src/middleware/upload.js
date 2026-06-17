@@ -26,13 +26,16 @@ function fileFilter(req, file, cb) {
     'application/vnd.openxmlformats-officedocument.presentationml.presentation',
     'text/plain',
   ];
-  if (allowed.includes(file.mimetype)) {
+
+  const allowedExtensions = ['.pdf', '.ppt', '.pptx', '.txt'];
+  const ext = path.extname(file.originalname).toLowerCase();
+
+  if (allowed.includes(file.mimetype) && allowedExtensions.includes(ext)) {
     cb(null, true);
   } else {
     cb(new Error('Only PDF, PPT, PPTX and TXT files are allowed'), false);
   }
 }
-
 const upload = multer({
   storage,
   fileFilter,

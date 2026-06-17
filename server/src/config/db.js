@@ -94,18 +94,34 @@ async function initDB() {
       last_seen TIMESTAMP DEFAULT NOW()
     )
   `);
+
   await pool.query(`
-  CREATE TABLE IF NOT EXISTS otp_verifications (
-    id TEXT PRIMARY KEY,
-    email TEXT NOT NULL,
-    otp TEXT NOT NULL,
-    expires_at TIMESTAMP NOT NULL,
-    verified BOOLEAN DEFAULT FALSE,
-    created_at TIMESTAMP DEFAULT NOW()
-  )
-`);
+    CREATE TABLE IF NOT EXISTS otp_verifications (
+      id TEXT PRIMARY KEY,
+      email TEXT NOT NULL,
+      otp TEXT NOT NULL,
+      expires_at TIMESTAMP NOT NULL,
+      verified BOOLEAN DEFAULT FALSE,
+      created_at TIMESTAMP DEFAULT NOW()
+    )
+  `);
+
+  // Create indexes after tables exist
+  await createIndexes();
 
   console.log('✅ Database initialised');
+}
+
+async function createIndexes() {
+  await pool.query(`CREATE INDEX IF NOT EXISTS idx_subjects_user_id ON subjects(user_id)`);
+  await pool.query(`CREATE INDEX IF NOT EXISTS idx_materials_subject_id ON materials(subject_id)`);
+  await pool.query(`CREATE INDEX IF NOT EXISTS idx_materials_user_id ON materials(user_id)`);
+  await pool.query(`CREATE INDEX IF NOT EXISTS idx_sessions_user_id ON study_sessions(user_id)`);
+  await pool.query(`CREATE INDEX IF NOT EXISTS idx_sessions_subject_id ON study_sessions(subject_id)`);
+  await pool.query(`CREATE INDEX IF NOT EXISTS idx_messages_session_id ON messages(session_id)`);
+  await pool.query(`CREATE INDEX IF NOT EXISTS idx_questions_session_id ON questions(session_id)`);
+  await pool.query(`CREATE INDEX IF NOT EXISTS idx_topic_memory_user_subject ON topic_memory(user_id, subject_id)`);
+  await pool.query(`CREATE INDEX IF NOT EXISTS idx_otp_email ON otp_verifications(email)`);
 }
 
 async function runQuery(sql, params = []) {
@@ -132,4 +148,10 @@ async function getOne(sql, params = []) {
   return rows[0] || null;
 }
 
-module.exports = { initDB, runQuery, getAll, getOne, pool };
+module.exports = {
+  initDB,
+  runQuery,
+  getAll,
+  getOne,
+  pool,
+};
