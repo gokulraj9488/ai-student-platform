@@ -4,6 +4,8 @@ import api from '../services/api';
 import useAuthStore from '../store/authStore';
 
 export default function SubjectPage() {
+  const [infoLoading, setInfoLoading] = useState(null);
+  const [infoResults, setInfoResults] = useState({});
   const { id } = useParams();
   const navigate = useNavigate();
   const [subjects, setSubjects] = useState([]);
@@ -42,7 +44,26 @@ export default function SubjectPage() {
       setSubjects(res.data.subjects);
     } catch {}
   }
+  async function evaluateMessage(userMsg, msgIndex) {
+  // Find the last Kurio question before this message
+  const prevMessages = messages.slice(0, msgIndex);
+  const lastKurioQuestion = [...prevMessages].reverse().find(m => m.role === 'assistant');
+  if (!lastKurioQuestion) return;
 
+  setInfoLoading(userMsg.id);
+  try {
+    const res = await api.post(`/api/chat/session/${activeSession.id}/evaluate`, {
+      question: lastKurioQuestion.content,
+      answer: userMsg.content,
+      subjectId: id,
+    });
+    setInfoResults(prev => ({ ...prev, [userMsg.id]: res.data.evaluation }));
+  } catch (err) {
+    console.error('Evaluation failed');
+  } finally {
+    setInfoLoading(null);
+  }
+}
   async function fetchSubject() {
     try {
       const res = await api.get(`/api/subjects/${id}`);
@@ -435,25 +456,71 @@ export default function SubjectPage() {
           )}
 
           {messages.map((msg, i) => (
-            <div key={msg.id || i} className={`flex items-end gap-2 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-              {msg.role === 'assistant' && (
-                <img src="/Kurio.png" alt="Kurio" className="w-7 h-7 rounded-full object-cover shrink-0 mb-1" style={{ border: '2px solid rgba(99,102,241,0.4)' }} />
-              )}
-              <div
-                className="max-w-xs md:max-w-lg px-4 py-2.5 text-sm leading-relaxed"
-                style={{
-                  background: msg.role === 'user' ? 'linear-gradient(135deg, #3b82f6, #6366f1)' : 'rgba(255,255,255,0.06)',
-                  border: msg.role === 'assistant' ? '1px solid rgba(255,255,255,0.08)' : 'none',
-                  borderRadius: msg.role === 'user' ? '18px 18px 4px 18px' : '18px 18px 18px 4px',
-                }}
-              >
-                {msg.content}
+  <div
+    key={msg.id || i}
+    className={`flex items-end gap-2 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+  >
+    {msg.role === 'assistant' && (
+      <img src="/Kurio.png" alt="Kurio" className="w-7 h-7 rounded-full object-cover shrink-0 mb-1" style={{ border: '2px solid rgba(99,102,241,0.4)' }} />
+    )}
+
+    <div className="flex flex-col max-w-xs md:max-w-lg">
+      <div
+        className="px-4 py-2.5 text-sm leading-relaxed"
+        style={{
+          background: msg.role === 'user'
+            ? 'linear-gradient(135deg, #3b82f6, #6366f1)'
+            : 'rgba(255,255,255,0.06)',
+          border: msg.role === 'assistant' ? '1px solid rgba(255,255,255,0.08)' : 'none',
+          borderRadius: msg.role === 'user' ? '18px 18px 4px 18px' : '18px 18px 18px 4px',
+        }}
+      >
+        {msg.content}
+      </div>
+
+      {/* Info icon for user messages */}
+      {msg.role === 'user' && (
+        <div className="flex justify-end mt-1 mr-1">
+          {infoLoading === msg.id ? (
+            <span className="text-xs text-gray-500">checking...</span>
+          ) : infoResults[msg.id] ? (
+            <div className="flex flex-col items-end gap-1">
+              <div className={`text-xs px-2 py-1 rounded-lg font-medium ${
+                infoResults[msg.id].score >= 7 ? 'bg-green-500/20 text-green-400' :
+                infoResults[msg.id].score >= 5 ? 'bg-yellow-500/20 text-yellow-400' :
+                'bg-red-500/20 text-red-400'
+              }`}>
+                {infoResults[msg.id].verdict} · {infoResults[msg.id].score}/10 · {infoResults[msg.id].accuracy}
               </div>
-              {msg.role === 'user' && (
-                <img src="/Teacher.png" alt="You" className="w-7 h-7 rounded-full object-cover shrink-0 mb-1" style={{ border: '2px solid rgba(59,130,246,0.4)' }} />
+              {infoResults[msg.id].missing_concepts?.length > 0 && (
+                <div className="text-xs text-gray-500">
+                  Missing: {infoResults[msg.id].missing_concepts.join(', ')}
+                </div>
               )}
+              <button
+                onClick={() => setInfoResults(prev => { const n = {...prev}; delete n[msg.id]; return n; })}
+                className="text-xs text-gray-600 hover:text-gray-400"
+              >hide</button>
             </div>
-          ))}
+          ) : (
+            <button
+              onClick={() => evaluateMessage(msg, i)}
+              className="w-5 h-5 rounded-full flex items-center justify-center text-xs transition"
+              style={{ background: 'rgba(255,255,255,0.08)', color: '#6b7280' }}
+              title="Check accuracy of this answer"
+            >
+              ⓘ
+            </button>
+          )}
+        </div>
+      )}
+    </div>
+
+    {msg.role === 'user' && (
+      <img src="/Teacher.png" alt="You" className="w-7 h-7 rounded-full object-cover shrink-0 mb-1" style={{ border: '2px solid rgba(59,130,246,0.4)' }} />
+    )}
+  </div>
+))}
 
           {sending && (
             <div className="flex items-end gap-2 justify-start">
