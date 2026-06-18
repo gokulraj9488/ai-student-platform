@@ -1,3 +1,11 @@
+const axios = require('axios');
+
+const OLLAMA_BASE_URL =
+  process.env.OLLAMA_BASE_URL || 'http://localhost:11434';
+
+const EMBED_MODEL =
+  process.env.OLLAMA_EMBED_MODEL || 'nomic-embed-text';
+
 async function ollamaEmbed(text) {
   try {
     const response = await axios.post(
@@ -19,3 +27,7 @@ async function ollamaEmbed(text) {
     throw err;
   }
 }
+
+module.exports = {
+  ollamaEmbed,
+};
