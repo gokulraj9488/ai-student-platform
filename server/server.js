@@ -1,16 +1,20 @@
-const app = require('./src/app');
-const { initDB } = require('./src/config/db');
 const dotenv = require('dotenv');
 const path = require('path');
+
+dotenv.config({ path: path.join(__dirname, '.env') });
+
+const app = require('./src/app');
+const { initDB } = require('./src/config/db');
 const fs = require('fs');
 
-dotenv.config({ path: path.join(__dirname, '../.env') });
-
 const PORT = process.env.PORT || 5000;
+
+console.log('RESEND:', process.env.RESEND_API_KEY ? 'FOUND' : 'MISSING');
 
 async function startServer() {
   try {
     const uploadDir = process.env.UPLOAD_DIR || './uploads';
+
     if (!fs.existsSync(uploadDir)) {
       fs.mkdirSync(uploadDir, { recursive: true });
     }
@@ -22,10 +26,9 @@ async function startServer() {
       console.log(`✅ Server running on port ${PORT}`);
     });
   } catch (err) {
-  console.error('❌ Failed to start server:');
-console.error(err);
-}
+    console.error('❌ Failed to start server:');
+    console.error(err);
   }
+}
 
-console.log('RESEND:', process.env.RESEND_API_KEY ? 'FOUND' : 'MISSING');
 startServer();
