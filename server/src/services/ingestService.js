@@ -62,7 +62,9 @@ async function ingestFile(material) {
     console.log(`✅ ${original_name}: database updated to done`);
 
   } catch (err) {
-    console.error(`❌ Ingest failed for ${original_name}:`, err.message);
+    console.error(`❌ Ingest failed for ${original_name}:`);
+console.error(err);
+console.error(JSON.stringify(err, null, 2));
     try {
       await runQuery(
         "UPDATE materials SET parse_status = 'failed' WHERE id = $1",
