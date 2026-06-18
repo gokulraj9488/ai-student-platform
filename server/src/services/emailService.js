@@ -38,9 +38,14 @@ console.log('Sending OTP to:', email);
         </p>
       </div>
     `,
-  };
+   };
+
+  console.log('Verifying SMTP...');
+  await transporter.verify();
+  console.log('SMTP verified successfully');
 
   await transporter.sendMail(mailOptions);
+  console.log('Email sent successfully');
 }
 
 module.exports = { generateOTP, sendOTP };
