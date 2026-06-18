@@ -27,5 +27,5 @@ console.error(err);
 }
   }
 
-
+console.log('RESEND:', process.env.RESEND_API_KEY ? 'FOUND' : 'MISSING');
 startServer();
