@@ -1,3 +1,5 @@
+console.log('=== OLLAMA FILE LOADED ===');
+console.log('Commit: 32aa069');
 const axios = require('axios');
 
 const OLLAMA_BASE_URL =
