@@ -84,25 +84,50 @@ export default function SubjectPage() {
   }
 
   async function createAutoSession() {
-    try {
-      const res = await api.post('/api/sessions', { title: 'Session 1', subjectId: id });
-      setActiveSession(res.data.session);
-      setSessions([res.data.session]);
-    } catch {}
-  }
+  try {
+    const res = await api.post('/api/sessions', { title: 'Session 1', subjectId: id });
+    setActiveSession(res.data.session);
+    setSessions([res.data.session]);
+
+    if (materials.some(m => m.parse_status === 'done')) {
+      setSending(true);
+      try {
+        const startRes = await api.post(`/api/chat/session/${res.data.session.id}/start`, { subjectId: id });
+        setMessages([startRes.data.aiMessage]);
+      } catch (err) {
+        console.error('Could not start conversation', err);
+      } finally {
+        setSending(false);
+      }
+    }
+  } catch {}
+}
 
   async function loadSession(session) {
-    setActiveSession(session);
-    setSending(false);
-    setMessages([]);
-    setInput('');
-    setShowSidebar(false);
-    setShowRightPanel(false);
-    try {
-      const res = await api.get(`/api/chat/session/${session.id}`);
-      setMessages(res.data.messages);
-    } catch {}
-  }
+  setActiveSession(session);
+  setSending(false);
+  setMessages([]);
+  setInput('');
+  setShowSidebar(false);
+  setShowRightPanel(false);
+  try {
+    const res = await api.get(`/api/chat/session/${session.id}`);
+    setMessages(res.data.messages);
+
+    // If session has no messages yet and a PDF is ready, let Kurio speak first
+    if (res.data.messages.length === 0 && materials.some(m => m.parse_status === 'done')) {
+      setSending(true);
+      try {
+        const startRes = await api.post(`/api/chat/session/${session.id}/start`, { subjectId: id });
+        setMessages([startRes.data.aiMessage]);
+      } catch (err) {
+        console.error('Could not start conversation', err);
+      } finally {
+        setSending(false);
+      }
+    }
+  } catch {}
+}
 
   async function sendMessage() {
     if (!input.trim() || sending || !activeSession) return;
@@ -337,17 +362,28 @@ export default function SubjectPage() {
             </div>
           ))}
           <button
-            onClick={async () => {
-              const title = `Session ${sessions.length + 1}`;
-              const res = await api.post('/api/sessions', { title, subjectId: id });
-              const newSession = res.data.session;
-              setSessions(prev => [newSession, ...prev]);
-              setActiveSession(newSession);
-              setMessages([]);
-              setSending(false);
-            }}
-            className="w-full text-left px-2 py-1.5 rounded-lg text-xs text-gray-600 hover:text-gray-400 hover:bg-white/5 transition"
-          >+ New Session</button>
+  onClick={async () => {
+    const title = `Session ${sessions.length + 1}`;
+    const res = await api.post('/api/sessions', { title, subjectId: id });
+    const newSession = res.data.session;
+    setSessions(prev => [newSession, ...prev]);
+    setActiveSession(newSession);
+    setMessages([]);
+
+    if (materials.some(m => m.parse_status === 'done')) {
+      setSending(true);
+      try {
+        const startRes = await api.post(`/api/chat/session/${newSession.id}/start`, { subjectId: id });
+        setMessages([startRes.data.aiMessage]);
+      } catch (err) {
+        console.error('Could not start conversation', err);
+      } finally {
+        setSending(false);
+      }
+    }
+  }}
+  className="w-full text-left px-2 py-1.5 rounded-lg text-xs text-gray-600 hover:text-gray-400 hover:bg-white/5 transition"
+>+ New Session</button>
         </div>
       </div>
     </div>

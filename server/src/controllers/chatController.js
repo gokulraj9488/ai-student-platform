@@ -137,4 +137,64 @@ async function evaluateUserAnswer(req, res, next) {
     next(err);
   }
 }
-module.exports = { sendMessage, getChatHistory, clearHistory, evaluateUserAnswer };
+async function startConversation(req, res, next) {
+  try {
+    const { sessionId } = req.params;
+    const { subjectId } = req.body;
+
+    const session = await getOne(
+      'SELECT * FROM study_sessions WHERE id = $1 AND user_id = $2',
+      [sessionId, req.user.id]
+    );
+    if (!session) return res.status(404).json({ error: 'Session not found' });
+
+    // Don't restart if messages already exist
+    const existing = await getAll(
+      'SELECT id FROM messages WHERE session_id = $1 LIMIT 1',
+      [sessionId]
+    );
+    if (existing.length > 0) {
+      return res.status(400).json({ error: 'Session already has messages' });
+    }
+
+    const chunks = await retrieveRelevantChunks('introduction overview summary', subjectId);
+    if (chunks.length === 0) {
+      return res.status(400).json({ error: 'No study materials found. Please upload a file first.' });
+    }
+
+    const crossSessionMemory = await getCrossSessionMemory(req.user.id, subjectId, sessionId, 5);
+    const weakTopics = await getWeakTopics(req.user.id, subjectId);
+
+    // Empty history + a kickoff instruction as the "user" trigger
+    const promptMessages = buildStudentPrompt(
+      chunks,
+      [],
+      '[The teacher just opened this session. Greet them briefly as your curious self, then ask your FIRST question about the material.]',
+      crossSessionMemory,
+      weakTopics
+    );
+
+    const aiResponse = await generateStudentResponse(promptMessages);
+
+    const aiMessageId = uuidv4();
+    const sourceChunks = JSON.stringify(chunks.map(c => c.metadata));
+    await runQuery(
+      'INSERT INTO messages (id, session_id, user_id, role, content, source_chunks) VALUES ($1,$2,$3,$4,$5,$6)',
+      [aiMessageId, sessionId, req.user.id, 'assistant', aiResponse, sourceChunks]
+    );
+
+    let topicTag = null;
+    if (aiResponse.includes('?')) {
+      topicTag = await updateTopicMemory(req.user.id, subjectId, aiResponse);
+      await runQuery(
+        'INSERT INTO questions (id, session_id, message_id, question_text, topic_tag) VALUES ($1,$2,$3,$4,$5)',
+        [uuidv4(), sessionId, aiMessageId, aiResponse, topicTag]
+      );
+    }
+
+    res.json({
+      aiMessage: { id: aiMessageId, role: 'assistant', content: aiResponse },
+    });
+  } catch (err) { next(err); }
+}
+module.exports = { sendMessage, getChatHistory, clearHistory, evaluateUserAnswer, startConversation };
