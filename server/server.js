@@ -11,7 +11,7 @@ const PORT = process.env.PORT || 5000;
 
 console.log('RESEND:', process.env.RESEND_API_KEY ? 'FOUND' : 'MISSING');
 console.log('HF_API_KEY:', process.env.HF_API_KEY ? `FOUND (${process.env.HF_API_KEY.substring(0,6)}...)` : 'MISSING');
-
+console.log('All env keys containing HF or API:', Object.keys(process.env).filter(k => k.includes('HF') || k.includes('API')));
 async function startServer() {
   try {
     const uploadDir = process.env.UPLOAD_DIR || './uploads';
