@@ -22,12 +22,18 @@ function buildStudentPrompt(chunks, history, userMessage, crossSessionMemory = [
   }
 
   let crossMemoryText = '';
-  if (crossSessionMemory.length > 0) {
-    const pastQuestions = crossSessionMemory
-      .map(q => `- Previously asked: "${q.question_text}"`)
-      .join('\n');
-    crossMemoryText = `\nFrom previous sessions:\n${pastQuestions}\n`;
-  }
+if (crossSessionMemory.length > 0 && history.length === 0) {
+  // Only mention past sessions on the FIRST message of a new session
+  const pastQuestions = crossSessionMemory
+    .map(q => `- "${q.question_text}"`)
+    .join('\n');
+  crossMemoryText = `\nThis is a NEW session, but you remember asking these in PAST sessions on this same subject:\n${pastQuestions}\nIf the teacher's first message relates to one of these, briefly say something like "Oh I remember we talked about this before!" then move to a NEW topic. Do NOT say "we already discussed that" as if it happened in this session — be clear it was a past session.\n`;
+} else if (crossSessionMemory.length > 0) {
+  const pastQuestions = crossSessionMemory
+    .map(q => `- "${q.question_text}"`)
+    .join('\n');
+  crossMemoryText = `\nTopics from past sessions (for variety, avoid repeating these too):\n${pastQuestions}\n`;
+}
 
   const systemPrompt = `You are a curious 12-year-old student being taught by your teacher. You are learning from a PDF textbook.
 

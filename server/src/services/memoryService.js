@@ -74,14 +74,14 @@ async function markTopicStrong(userId, subjectId, topic) {
   }
 }
 
-async function getCrossSessionMemory(userId, subjectId, limit = 5) {
+async function getCrossSessionMemory(userId, subjectId, currentSessionId, limit = 5) {
   return await getAll(
-    `SELECT q.question_text, q.topic_tag, q.ask_count, q.strength
+    `SELECT q.question_text, q.topic_tag
      FROM questions q
      JOIN study_sessions s ON q.session_id = s.id
-     WHERE s.user_id = $1 AND s.subject_id = $2
-     ORDER BY q.asked_at DESC LIMIT $3`,
-    [userId, subjectId, limit]
+     WHERE s.user_id = $1 AND s.subject_id = $2 AND q.session_id != $3
+     ORDER BY q.asked_at DESC LIMIT $4`,
+    [userId, subjectId, currentSessionId, limit]
   );
 }
 

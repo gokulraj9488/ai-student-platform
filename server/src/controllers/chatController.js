@@ -36,8 +36,7 @@ async function sendMessage(req, res, next) {
       return res.status(400).json({ error: 'No study materials found. Please upload a file first.' });
     }
 
-    const crossSessionMemory = await getCrossSessionMemory(req.user.id, subjectId, 5);
-    const weakTopics = await getWeakTopics(req.user.id, subjectId);
+    const crossSessionMemory = await getCrossSessionMemory(req.user.id, subjectId, sessionId, 5);    const weakTopics = await getWeakTopics(req.user.id, subjectId);
 
     const promptMessages = buildStudentPrompt(chunks, history, message, crossSessionMemory, weakTopics);
     const aiResponse = await generateStudentResponse(promptMessages);
