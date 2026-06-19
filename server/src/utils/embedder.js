@@ -7,8 +7,7 @@ const EMBED_DIM = 384;
 async function embedText(text) {
   try {
     if (!HF_API_KEY) {
-      console.warn('HF_API_KEY missing — using zero vector fallback');
-      return new Array(EMBED_DIM).fill(0);
+      throw new Error('HF_API_KEY is not set in environment variables. Add it to .env or Railway variables.');
     }
 
     const response = await axios.post(
