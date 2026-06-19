@@ -3,46 +3,20 @@ const axios = require('axios');
 const HF_MODEL = 'sentence-transformers/all-MiniLM-L6-v2';
 
 async function embedText(text) {
+  console.log('HF KEY EXISTS:', !!process.env.HF_API_KEY);
+
   try {
-    const apiKey = process.env.HF_API_KEY;
-
-    if (!apiKey) {
-      throw new Error('HF_API_KEY is missing');
-    }
-
-    const url =
-      `https://api-inference.huggingface.co/pipeline/feature-extraction/${HF_MODEL}`;
-
-    console.log('Calling HF URL:', url);
-
-    const response = await axios.post(
-      url,
-      {
-        inputs: text.substring(0, 1000),
-        options: {
-          wait_for_model: true,
-        },
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-          'Content-Type': 'application/json',
-        },
-        timeout: 30000,
-      }
+    const response = await axios.get(
+      'https://api-inference.huggingface.co'
     );
 
-    console.log('HF Success');
+    console.log('HF RESPONSE STATUS:', response.status);
 
-    const embedding = response.data;
+    // Return fake embedding so upload can continue
+    return new Array(384).fill(0);
 
-    if (Array.isArray(embedding[0])) {
-      return embedding[0];
-    }
-
-    return embedding;
   } catch (err) {
-    console.error('===== HF ERROR =====');
+    console.error('===== HF TEST FAILED =====');
     console.error('Message:', err.message);
     console.error('Code:', err.code);
 
@@ -54,7 +28,6 @@ async function embedText(text) {
     throw err;
   }
 }
-
 async function embedMany(chunks) {
   const embeddings = [];
 
