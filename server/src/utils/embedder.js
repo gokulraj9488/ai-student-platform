@@ -5,9 +5,7 @@ const EMBED_DIM = 384;
 
 async function embedText(text) {
   try {
-    const apiKey = process.env.HF_API_KEY; // read fresh every call, not cached at module load
-
-    if (!apiKey) {
+const apiKey = process.env.HF_API_KEY;    if (!apiKey) {
       throw new Error('HF_API_KEY is not set in environment variables. Add it to .env or Railway variables.');
     }
 
