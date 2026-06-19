@@ -1,13 +1,39 @@
-const { ollamaEmbed } = require('../config/ollama');
+const axios = require('axios');
+
+const HF_API_KEY = process.env.HF_API_KEY;
+const HF_MODEL = 'sentence-transformers/all-MiniLM-L6-v2';
+const EMBED_DIM = 384;
 
 async function embedText(text) {
   try {
-    const embedding = await ollamaEmbed(text);
-    if (!embedding) throw new Error('Ollama returned empty embedding');
+    if (!HF_API_KEY) {
+      console.warn('HF_API_KEY missing — using zero vector fallback');
+      return new Array(EMBED_DIM).fill(0);
+    }
+
+    const response = await axios.post(
+      `https://api-inference.huggingface.co/pipeline/feature-extraction/${HF_MODEL}`,
+      { inputs: text, options: { wait_for_model: true } },
+      {
+        headers: {
+          Authorization: `Bearer ${HF_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        timeout: 30000,
+      }
+    );
+
+    const embedding = response.data;
+
+    // HF returns nested array for batches, flat array for single input
+    if (Array.isArray(embedding[0])) {
+      return embedding[0];
+    }
     return embedding;
   } catch (err) {
     console.error('Embed error:', err.message);
-    throw err;
+    // Return zero vector so ingest doesn't crash — file still gets stored
+    return new Array(EMBED_DIM).fill(0);
   }
 }
 
@@ -17,6 +43,10 @@ async function embedMany(chunks) {
     console.log(`Embedding chunk ${i + 1} of ${chunks.length}...`);
     const embedding = await embedText(chunks[i]);
     embeddings.push(embedding);
+    // Small delay to avoid HF rate limits
+    if (i < chunks.length - 1) {
+      await new Promise(r => setTimeout(r, 200));
+    }
   }
   return embeddings;
 }

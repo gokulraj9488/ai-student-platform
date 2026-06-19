@@ -1,26 +1,25 @@
-const { ollamaEmbed } = require('../config/ollama');
+const { embedText } = require('../utils/embedder');
 const { getOrCreateCollection } = require('../config/chroma');
 
 async function retrieveRelevantChunks(query, subjectId, topK = 5) {
   try {
-    const collectionName = `subject_${subjectId}`;
-    const collection = await getOrCreateCollection(collectionName);
-
-    const queryEmbedding = await ollamaEmbed(query);
+    const collection = await getOrCreateCollection(`subject_${subjectId}`);
+    const queryEmbedding = await embedText(query);
 
     const results = await collection.query({
       queryEmbeddings: [queryEmbedding],
       nResults: topK,
     });
 
-    if (!results || !results.documents || results.documents[0].length === 0) {
+    if (!results?.documents?.[0]?.length) {
+      console.log('No chunks found for query');
       return [];
     }
 
     return results.documents[0].map((doc, i) => ({
       document: doc,
-      metadata: results.metadatas[0][i],
-      distance: results.distances[0][i],
+      metadata: results.metadatas?.[0]?.[i] || {},
+      distance: results.distances?.[0]?.[i] || 0,
     }));
   } catch (err) {
     console.error('Retrieval error:', err.message);
@@ -28,4 +27,4 @@ async function retrieveRelevantChunks(query, subjectId, topK = 5) {
   }
 }
 
-module.exports = { retrieveRelevantChunks }; 
+module.exports = { retrieveRelevantChunks };
