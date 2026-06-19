@@ -1,7 +1,7 @@
 const dotenv = require('dotenv');
 const path = require('path');
 
-dotenv.config({ path: path.join(__dirname, '.env') });
+dotenv.config({ path: path.join(__dirname, '../.env') });
 
 const app = require('./src/app');
 const { initDB } = require('./src/config/db');
@@ -10,7 +10,7 @@ const fs = require('fs');
 const PORT = process.env.PORT || 5000;
 
 console.log('RESEND:', process.env.RESEND_API_KEY ? 'FOUND' : 'MISSING');
-console.log('HF_API_KEY:', process.env.HF_API_KEY ? 'FOUND' : 'MISSING');
+console.log('HF_API_KEY:', process.env.HF_API_KEY ? `FOUND (${process.env.HF_API_KEY.substring(0,6)}...)` : 'MISSING');
 
 async function startServer() {
   try {
