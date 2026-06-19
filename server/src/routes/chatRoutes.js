@@ -6,8 +6,9 @@ const { sendMessage, getChatHistory, clearHistory, evaluateUserAnswer, startConv
 router.use(auth);
 
 router.post('/session/:sessionId/start', startConversation);
+router.post('/session/:sessionId/evaluate', evaluateUserAnswer);
+router.post('/session/:sessionId', sendMessage);
 router.get('/session/:sessionId', getChatHistory);
 router.delete('/session/:sessionId', clearHistory);
-router.post('/session/:sessionId/evaluate', evaluateUserAnswer);
 
 module.exports = router;

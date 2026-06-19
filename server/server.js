@@ -10,6 +10,7 @@ const fs = require('fs');
 const PORT = process.env.PORT || 5000;
 
 console.log('RESEND:', process.env.RESEND_API_KEY ? 'FOUND' : 'MISSING');
+console.log('HF_API_KEY:', process.env.HF_API_KEY ? 'FOUND' : 'MISSING');
 
 async function startServer() {
   try {
