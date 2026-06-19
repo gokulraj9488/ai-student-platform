@@ -10,16 +10,22 @@ function extractTopic(text) {
     'machine learning', 'neural network', 'programming',
     'function', 'class', 'object', 'inheritance', 'Google Cloud',
     'BigQuery', 'Looker', 'React', 'JavaScript', 'Python', 'Java',
+    'resistance', 'resistor', 'circuit', 'current', 'voltage',
+    'electricity', 'electrolysis', 'reflection', 'refraction',
+    'lens', 'mirror', 'focal length', 'power of lens', 'ohm',
   ];
   const lower = text.toLowerCase();
   for (const topic of topics) {
     if (lower.includes(topic.toLowerCase())) return topic;
   }
-  return text.split(' ').slice(0, 3).join(' ');
+  // No keyword match — don't store junk, return null instead of guessing
+  return null;
 }
 
 async function updateTopicMemory(userId, subjectId, questionText) {
   const topic = extractTopic(questionText);
+  if (!topic) return null; // don't pollute memory with unmatched junk
+
   const existing = await getOne(
     'SELECT * FROM topic_memory WHERE user_id = $1 AND subject_id = $2 AND topic = $3',
     [userId, subjectId, topic]
