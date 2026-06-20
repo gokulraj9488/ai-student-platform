@@ -1,19 +1,22 @@
 const axios = require('axios');
 
-const HF_MODEL = 'sentence-transformers/all-MiniLM-L6-v2';
-const EMBED_DIM = 384;
+const EMBED_DIM = 1024; // Cohere embed-english-v3.0 dimension
 
 async function embedText(text) {
   try {
-    const apiKey = process.env.HF_API_KEY;
+    const apiKey = process.env.COHERE_API_KEY;
 
     if (!apiKey) {
-      throw new Error('HF_API_KEY is not set in environment variables. Add it to .env or Railway variables.');
+      throw new Error('COHERE_API_KEY is not set in environment variables.');
     }
 
     const response = await axios.post(
-      `https://router.huggingface.co/hf-inference/models/${HF_MODEL}/pipeline/feature-extraction`,
-      { inputs: text, options: { wait_for_model: true } },
+      'https://api.cohere.com/v1/embed',
+      {
+        texts: [text],
+        model: 'embed-english-v3.0',
+        input_type: 'search_document',
+      },
       {
         headers: {
           Authorization: `Bearer ${apiKey}`,
@@ -23,12 +26,7 @@ async function embedText(text) {
       }
     );
 
-    const embedding = response.data;
-
-    if (Array.isArray(embedding[0])) {
-      return embedding[0];
-    }
-    return embedding;
+    return response.data.embeddings[0];
   } catch (err) {
     console.error('Embed error:', err.message);
     if (err.response) {
