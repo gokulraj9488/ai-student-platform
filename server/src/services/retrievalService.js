@@ -1,7 +1,7 @@
 const { embedText } = require('../utils/embedder');
 const { getOrCreateCollection } = require('../config/chroma');
 
-async function retrieveRelevantChunks(query, subjectId, topK = 5) {
+async function retrieveRelevantChunks(query, subjectId, topK = 3) {
   try {
     const collection = await getOrCreateCollection(`subject_${subjectId}`);
     const queryEmbedding = await embedText(query);

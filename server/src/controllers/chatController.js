@@ -25,11 +25,12 @@ async function sendMessage(req, res, next) {
     );
 
     const history = await getAll(
-      'SELECT role, content FROM messages WHERE session_id = $1 ORDER BY created_at ASC LIMIT 10',
-      [sessionId]
-    );
+  'SELECT role, content FROM messages WHERE session_id = $1 ORDER BY created_at DESC LIMIT 6',
+  [sessionId]
+);
+history.reverse(); // put back in chronological order after DESC fetch
 
-    const chunks = await retrieveRelevantChunks(message, subjectId);
+    const chunks = await retrieveRelevantChunks(message, subjectId, 3);
     console.log(`🔍 Retrieved ${chunks.length} chunks for query`);
 
     if (chunks.length === 0) {
