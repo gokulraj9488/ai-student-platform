@@ -51,6 +51,8 @@ const allowedOrigins = [
   'http://localhost:5173',
   'http://localhost:3000',
   process.env.FRONTEND_URL,
+  'https://kuriosity.gokul.quest',
+  'https://ai-student-platform-three.vercel.app',
 ].filter(Boolean);
 
 app.use(
