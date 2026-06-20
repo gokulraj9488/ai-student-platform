@@ -25,6 +25,7 @@ export default function SubjectPage() {
   const [showRightPanel, setShowRightPanel] = useState(false);
   const fileRef = useRef();
   const bottomRef = useRef();
+  const textareaRef = useRef();
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
 
@@ -33,7 +34,12 @@ export default function SubjectPage() {
     fetchSubject();
     fetchSessions();
   }, [id]);
-
+  useEffect(() => {
+  if (textareaRef.current) {
+    textareaRef.current.style.height = 'auto';
+    textareaRef.current.style.height = Math.min(textareaRef.current.scrollHeight, 160) + 'px';
+  }
+}, [input]);
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, sending]);
@@ -587,16 +593,28 @@ export default function SubjectPage() {
             <input ref={fileRef} type="file" accept=".pdf,.ppt,.pptx,.txt" onChange={handleUpload} className="hidden" />
 
             <textarea
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
-              }}
-              placeholder="Teach Kurio something..."
-              rows={1}
-              className="flex-1 bg-transparent text-white text-sm focus:outline-none resize-none placeholder-gray-600"
-              style={{ maxHeight: 100 }}
-            />
+  ref={textareaRef}
+  value={input}
+  onChange={(e) => {
+    setInput(e.target.value);
+  }}
+  onPaste={() => {
+    // Let the paste actually land in the DOM first, then resize
+    setTimeout(() => {
+      if (textareaRef.current) {
+        textareaRef.current.style.height = 'auto';
+        textareaRef.current.style.height = Math.min(textareaRef.current.scrollHeight, 160) + 'px';
+      }
+    }, 0);
+  }}
+  onKeyDown={(e) => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+  }}
+  placeholder="Teach Kurio something..."
+  rows={1}
+  className="flex-1 bg-transparent text-white text-sm focus:outline-none resize-none placeholder-gray-600"
+  style={{ height: '24px', maxHeight: '160px', overflowY: 'auto' }}
+/>
 
             <button
               onClick={sendMessage}
