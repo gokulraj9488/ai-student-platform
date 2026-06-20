@@ -5,6 +5,7 @@ import useAuthStore from '../store/authStore';
 
 export default function SubjectPage() {
   const [infoLoading, setInfoLoading] = useState(null);
+  const [showUploadBanner, setShowUploadBanner] = useState(false);
   const [usage, setUsage] = useState(null);
   const [infoResults, setInfoResults] = useState({});
   const { id } = useParams();
@@ -176,6 +177,7 @@ export default function SubjectPage() {
     const file = e.target.files[0];
     if (!file) return;
     setUploading(true);
+    setShowUploadBanner(true);
     try {
       const formData = new FormData();
       formData.append('file', file);
@@ -190,19 +192,22 @@ export default function SubjectPage() {
           if (updated) {
             setMaterials(statusRes.data.materials);
             setSelectedMaterial(updated);
-            if (updated.parse_status === 'done' || updated.parse_status === 'failed') clearInterval(pollInterval);
+            if (updated.parse_status === 'done' || updated.parse_status === 'failed') {
+              clearInterval(pollInterval);
+              setTimeout(() => setShowUploadBanner(false), 2500);
+            }
           }
         } catch { clearInterval(pollInterval); }
       }, 3000);
       setTimeout(() => clearInterval(pollInterval), 180000);
     } catch (err) {
       alert(err.response?.data?.error || 'Upload failed');
+      setShowUploadBanner(false);
     } finally {
       setUploading(false);
       if (fileRef.current) fileRef.current.value = '';
     }
   }
-
   async function deleteMaterial(matId) {
     if (!confirm('Delete this material?')) return;
     await api.delete(`/api/upload/materials/${matId}`);
@@ -405,7 +410,7 @@ export default function SubjectPage() {
   );
 
   return (
-    <div className="flex h-screen bg-gray-950 text-white overflow-hidden">
+    <div className="flex bg-gray-950 text-white overflow-hidden" style={{ height: '100dvh' }}>
 
       {/* Mobile sidebar overlay */}
       {showSidebar && (
@@ -433,7 +438,7 @@ export default function SubjectPage() {
       </div>
 
       {/* MAIN CHAT AREA */}
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex-1 flex flex-col min-w-0 min-h-0">
 
         {/* Top bar */}
         <div className="px-4 py-3 border-b border-white/5 flex items-center justify-between shrink-0" style={{ background: 'rgba(10,15,35,0.8)' }}>
@@ -497,10 +502,38 @@ export default function SubjectPage() {
             </button>
           </div>
         </div>
-
+        {/* Mobile upload status banner */}
+{showUploadBanner && (
+  <div className="md:hidden px-4 py-2 flex items-center gap-2 text-xs shrink-0" style={{
+    background: materials.find(m => m.parse_status === 'done')
+      ? 'rgba(16,185,129,0.15)'
+      : materials.find(m => m.parse_status === 'failed')
+      ? 'rgba(239,68,68,0.15)'
+      : 'rgba(99,102,241,0.15)',
+    borderBottom: '1px solid rgba(255,255,255,0.05)',
+  }}>
+    {materials.find(m => m.parse_status === 'processing') && (
+      <>
+        <div className="w-2 h-2 rounded-full bg-indigo-400 animate-pulse"></div>
+        <span className="text-indigo-300">Uploading and processing your PDF...</span>
+      </>
+    )}
+    {materials.find(m => m.parse_status === 'done') && (
+      <>
+        <div className="w-2 h-2 rounded-full bg-green-400"></div>
+        <span className="text-green-300">PDF ready — you can start teaching Kurio!</span>
+      </>
+    )}
+    {materials.find(m => m.parse_status === 'failed') && (
+      <>
+        <div className="w-2 h-2 rounded-full bg-red-400"></div>
+        <span className="text-red-300">Upload failed — try again</span>
+      </>
+    )}
+  </div>
+)}
         {/* Messages */}
-        <div className="flex-1 overflow-y-auto px-4 md:px-6 py-5 space-y-4" style={{ background: 'rgba(3,7,18,0.6)' }}>
-          {messages.length === 0 && !sending && (
+          <div className="flex-1 overflow-y-auto min-h-0 px-4 md:px-6 py-5 space-y-4" style={{ background: 'rgba(3,7,18,0.6)' }}>          {messages.length === 0 && !sending && (
             <div className="flex flex-col items-center justify-center h-full text-center px-4">
               <img src="/Kurio.png" alt="Kurio" className="w-16 h-16 md:w-20 md:h-20 rounded-full object-cover mb-4" style={{ border: '3px solid rgba(99,102,241,0.4)' }} />
               <p className="text-gray-400 font-medium">Hi! I'm Kurio, your AI student</p>
