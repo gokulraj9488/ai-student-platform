@@ -17,7 +17,7 @@ async function sendOTP(email, otp) {
     console.log('Sending OTP to:', email);
 
     const { data, error } = await resend.emails.send({
-      from: 'Kuriosity <onboarding@resend.dev>',
+      from: 'Kuriosity <noreply@gokul.quest>',
       to: email,
       subject: 'Your Kuriosity OTP Code',
       html: `
