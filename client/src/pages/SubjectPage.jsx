@@ -5,6 +5,7 @@ import useAuthStore from '../store/authStore';
 
 export default function SubjectPage() {
   const [infoLoading, setInfoLoading] = useState(null);
+  const [usage, setUsage] = useState(null);
   const [infoResults, setInfoResults] = useState({});
   const { id } = useParams();
   const navigate = useNavigate();
@@ -43,7 +44,15 @@ export default function SubjectPage() {
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, sending]);
-
+  useEffect(() => {
+  const interval = setInterval(async () => {
+    try {
+      const res = await api.get('/api/chat/usage');
+      setUsage(res.data);
+    } catch {}
+  }, 5000);
+  return () => clearInterval(interval);
+}, []);
   async function fetchAllSubjects() {
     try {
       const res = await api.get('/api/subjects');
@@ -446,11 +455,13 @@ export default function SubjectPage() {
 
           <div className="flex items-center gap-2 md:gap-3">
             {/* Kurio status */}
-            <div className="hidden md:flex items-center gap-2">
-              <img src="/Kurio.png" alt="Kurio" className="w-5 h-5 rounded-full object-cover" />
-              <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse"></div>
-              <span className="text-xs text-gray-400">Kurio is ready</span>
-            </div>
+            <div className="hidden md:flex items-center gap-2" title={usage ? `${usage.used}/${usage.limit} tokens used this minute` : ''}>
+  <img src="/Kurio.png" alt="Kurio" className="w-5 h-5 rounded-full object-cover" />
+  <div className={`w-2 h-2 rounded-full ${usage && usage.percentUsed > 80 ? 'bg-yellow-400' : 'bg-green-400'} animate-pulse`}></div>
+  <span className="text-xs text-gray-400">
+    {usage && usage.percentUsed > 80 ? 'Kurio is busy, slowing down' : 'Kurio is ready'}
+  </span>
+</div>
 
             {/* Contact / Portfolio button */}
             
