@@ -472,7 +472,7 @@ export default function SubjectPage() {
             
               {/* Contact / Portfolio button */}
 <a
-  href="https://gokulraj9488.github.io/Gokulraj-portfolio/"
+  href="https://gokul.quest"
   target="_blank"
   rel="noopener noreferrer"
   className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium transition"

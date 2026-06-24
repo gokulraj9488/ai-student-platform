@@ -126,7 +126,7 @@ export default function Login() {
         {/* Contact */}
         <p className="text-center mt-4 text-xs text-gray-600">
           Built by{' '}
-          <a href="https://gokulraj9488.github.io/Gokulraj-portfolio/" target="_blank" rel="noopener noreferrer" className="text-indigo-400 hover:underline">
+          <a href="https://gokul.quest" target="_blank" rel="noopener noreferrer" className="text-indigo-400 hover:underline">
             Gokulraj
           </a>
         </p>

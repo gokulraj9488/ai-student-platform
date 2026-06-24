@@ -73,7 +73,7 @@ export default function Dashboard() {
         </div>
         <div className="flex items-center gap-2 md:gap-4">
   <a
-    href="https://gokulraj9488.github.io/Gokulraj-portfolio/"
+    href="https://gokul.quest"
     target="_blank"
     rel="noopener noreferrer"
     className="flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-medium transition"
